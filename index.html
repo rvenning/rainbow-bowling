@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="gk-version" content="1" data-date="2026-11-26" data-kit="1.10.1">
+<meta name="gk-version" content="2" data-date="2026-11-26" data-kit="1.10.1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Rainbow Bowling — Ten-pin with a rainbow ball</title>
 <link rel="manifest" href="manifest.json">
@@ -26,8 +26,6 @@
   <symbol id="ico-trophy" viewBox="0 0 24 24"><path d="M7 3h10v4a5 5 0 01-10 0zM5 4H3v2a4 4 0 004 4M19 4h2v2a4 4 0 01-4 4M12 12v4M8 20h8M9.5 16h5l.8 4h-6.6z" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round"/></symbol>
   <symbol id="ico-pause" viewBox="0 0 24 24"><rect x="6" y="4.5" width="4" height="15" rx="1.4" fill="currentColor"/><rect x="14" y="4.5" width="4" height="15" rx="1.4" fill="currentColor"/></symbol>
   <symbol id="ico-back" viewBox="0 0 24 24"><path d="M15 4l-8 8 8 8" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></symbol>
-  <symbol id="ico-left" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></symbol>
-  <symbol id="ico-right" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></symbol>
   <symbol id="ico-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2.5" fill="currentColor"/><path d="M8 10V7.5a4 4 0 018 0V10" stroke="currentColor" stroke-width="2.2" fill="none"/></symbol>
 </defs></svg>
 
@@ -116,14 +114,16 @@
         <span class="pin-map" id="pin-map" aria-label="Pins standing"></span>
       </div>
     </div>
-    <div class="power" id="power" aria-hidden="true"><i></i></div>
+    <div class="power" id="power" aria-hidden="true"><div class="power-bar"><i></i></div><b></b></div>
     <div class="stamp" id="stamp" aria-live="polite"></div>
     <div class="turn-card" id="turn-card" aria-live="polite"></div>
-    <div class="hint" id="hint">Pull down anywhere, then let go to bowl!</div>
+    <div class="swipe-hint gone" id="hint" aria-hidden="true">
+      <p class="swipe-say"><b>Swipe up to bowl!</b><small>Slide sideways to move the ball</small></p>
+      <i class="swipe-streak"></i>
+      <span class="swipe-finger">👆</span>
+    </div>
     <div class="bottom-bar">
-      <button class="nudge-btn" id="btn-left" aria-label="Move the ball left"><svg class="i"><use href="#ico-left"/></svg></button>
       <div class="tray" id="tray" aria-label="Power-ups"></div>
-      <button class="nudge-btn" id="btn-right" aria-label="Move the ball right"><svg class="i"><use href="#ico-right"/></svg></button>
     </div>
   </div>
 </div>
@@ -211,8 +211,9 @@
   <div class="modal-box howto">
     <h2>How to play</h2>
     <ul class="howto-list">
-      <li><span><b>Bowl:</b> press anywhere on the lane and pull down, like a slingshot. Pull further for more power. Slide sideways to steer the rainbow dots. Let go to bowl!</span></li>
-      <li><span><b>Move the ball</b> left or right with the big arrow buttons before you bowl.</span></li>
+      <li><span><b>Bowl:</b> put your finger on the ball and swipe up toward the pins. Swipe faster to bowl harder.</span></li>
+      <li><span><b>Move the ball:</b> slide your finger sideways first, then swipe up.</span></li>
+      <li><span><b>Curve it:</b> bend your swipe and the ball curves the same way into the pins.</span></li>
       <li><span><b>Strike:</b> all ten pins with your first ball. Fireworks! You score 10 plus your next two balls.</span></li>
       <li><span><b>Spare:</b> all the pins with two balls. You score 10 plus your next ball.</span></li>
       <li><span><b>Power-ups:</b> knock down every pin to win one. Tap it before you bowl to use it: 🚀 Rainbow Boost, 🎈 Giant Ball, 🍀 Lucky Bounce, ✨ Sparkle Burst.</span></li>
@@ -240,6 +241,7 @@
 <script src="js/lane.js"></script>
 <script src="js/game.js"></script>
 <script src="js/bot.js"></script>
+<script src="js/swipe.js"></script>
 <!-- app -->
 <script src="js/storage.js"></script>
 <script src="js/audio.js"></script>

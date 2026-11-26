@@ -12,10 +12,12 @@ fireworks for a strike and something silly for a spare.
 
 ## Features
 
-- **Pull down and let go.** Press anywhere on the lane and pull down like a
-  slingshot: further is harder, sliding sideways steers. A dotted rainbow line
-  shows where the ball will meet the pins. Two big arrow buttons move the ball
-  across the foul line first.
+- **Swipe to bowl.** Flick the ball up the lane: the direction is where it
+  goes and a faster flick bowls harder, in four broad steps, so even a lazy
+  push reaches the pins. A gentle aim assist pulls near misses into the
+  pocket. Drag sideways first to move the ball across the foul line. Bend the
+  swipe and the ball hooks the same way, still arriving where it was aimed.
+  A finger animation teaches the swipe on the first few throws.
 - **Real ten-pin rules and scoring.** Strikes, spares, splits, the tenth
   frame's bonus balls, running totals that wait for their bonus balls, and a
   proper score sheet. 300 is a perfect game.
@@ -68,7 +70,9 @@ node lib/tools/stamp-version.js . --bump
   with skill expressed as how far its aim and power wobble.
 - `js/render.js`: the perspective alley, pins, rainbow ball and trail.
 - `js/fireworks.js`, `js/input.js`, `js/audio.js`, `js/main.js`: the
-  fireworks overlay, the slingshot, sound, and the app shell.
+  fireworks overlay, the swipe, sound, and the app shell.
+- `js/swipe.js`: reads a finger track as a throw (direction, aim assist,
+  speed band, bend). Pure, so `tests/swipe.test.js` feeds it made-up swipes.
 - `tools/sweep.js`: balance probe. What a throw knocks down, and how each
   bot skill scores over many games.
 

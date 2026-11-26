@@ -1,6 +1,6 @@
 // Rainbow Bowling service worker — network-first, cache fallback.
 // Bump with `node lib/tools/stamp-version.js . --bump`, never by hand.
-const CACHE = "rainbow-bowling-v1";
+const CACHE = "rainbow-bowling-v2";
 const SHELL = [
   ".",
   "index.html",
@@ -21,6 +21,7 @@ const SHELL = [
   "js/lane.js",
   "js/game.js",
   "js/bot.js",
+  "js/swipe.js",
   "js/storage.js",
   "js/audio.js",
   "js/render.js",

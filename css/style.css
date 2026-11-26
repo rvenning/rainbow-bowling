@@ -185,11 +185,8 @@ body[data-screen="game"] .toast { top: calc(132px + env(safe-area-inset-top)); b
 .pin-map i { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.14); }
 .pin-map i.up { background: #fff; box-shadow: 0 0 5px #ffb3e6; }
 
-.bottom-bar { position: absolute; left: 0; right: 0; bottom: 0; padding: 0 12px calc(12px + env(safe-area-inset-bottom)); display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; pointer-events: none; }
+.bottom-bar { position: absolute; left: 0; right: 0; bottom: 0; padding: 0 12px calc(12px + env(safe-area-inset-bottom)); display: flex; align-items: flex-end; justify-content: center; gap: 10px; pointer-events: none; }
 .bottom-bar > * { pointer-events: auto; }
-.nudge-btn { width: 64px; height: 64px; border-radius: 50%; border: 0; background: rgba(58, 29, 134, .92); color: #fff; font-size: 30px; box-shadow: 0 5px 0 var(--soft-lip), 0 0 16px rgba(123,92,255,.5); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none; touch-action: none; }
-.nudge-btn:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 2px 0 var(--soft-lip); }
-.nudge-btn:disabled { opacity: .35; }
 .tray { flex: 1; display: flex; justify-content: center; gap: 8px; min-height: 64px; align-items: flex-end; max-width: 300px; }
 .tray-empty { font: 700 13px var(--body); color: var(--dim); text-align: center; background: rgba(15,6,48,.7); border-radius: 12px; padding: 6px 10px; }
 .pw { width: 68px; height: 68px; border-radius: 18px; border: 0; background: rgba(15,6,48,.9); box-shadow: 0 0 0 2px var(--line), 0 4px 0 var(--soft-lip); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; gap: 0; }
@@ -201,14 +198,26 @@ body[data-screen="game"] .toast { top: calc(132px + env(safe-area-inset-top)); b
 body:not(.reduced-motion) .pw.on span { animation: wiggle .6s ease-in-out infinite; }
 @keyframes wiggle { 0%,100% { transform: rotate(-8deg) scale(1.05); } 50% { transform: rotate(8deg) scale(1.15); } }
 
-.power { position: absolute; right: 14px; top: 34%; width: 18px; height: 34%; border-radius: 10px; background: rgba(15,6,48,.8); box-shadow: 0 0 0 2px var(--line); overflow: hidden; opacity: 0; transition: opacity .15s; pointer-events: none; display: flex; align-items: flex-end; }
+.power { position: absolute; right: 10px; top: 34%; height: 34%; width: 64px; display: flex; flex-direction: column; align-items: center; gap: 6px; opacity: 0; transition: opacity .15s; pointer-events: none; }
 .power.on { opacity: 1; }
-.power i { display: block; width: 100%; background: linear-gradient(0deg, #3bd16f, #ffd21f, #ff8a1f, #ff3b5c); border-radius: 8px; }
-.power.hot { box-shadow: 0 0 0 2px #ff8ad0, 0 0 14px #ff3b5c; }
+.power-bar { flex: 1; width: 18px; border-radius: 10px; background: rgba(15,6,48,.8); box-shadow: 0 0 0 2px var(--line); overflow: hidden; display: flex; align-items: flex-end; }
+.power i { display: block; width: 100%; background: linear-gradient(0deg, #3bd16f, #ffd21f, #ff8a1f, #ff3b5c); border-radius: 8px; transition: height .12s; }
+.power.hot .power-bar { box-shadow: 0 0 0 2px #ff8ad0, 0 0 14px #ff3b5c; }
+.power b { font: 800 13px var(--body); color: #fff; background: rgba(15,6,48,.88); border-radius: 8px; padding: 2px 7px; min-height: 1em; }
+.power b:empty { display: none; }
 
-.hint { position: absolute; left: 50%; top: 47%; transform: translateX(-50%); background: rgba(15,6,48,.88); border: 2px solid var(--line); border-radius: 14px; padding: 9px 14px; font: 800 15px var(--body); white-space: nowrap; pointer-events: none; transition: opacity .3s; }
-.hint.gone { opacity: 0; }
-body:not(.reduced-motion) .hint:not(.gone) { animation: bob 1.6s ease-in-out infinite; }
+/* the swipe hint sits ON the ball: its (left, top) is the ball centre */
+.swipe-hint { position: absolute; left: 50%; top: 80%; width: 0; height: 0; pointer-events: none; transition: opacity .3s; }
+.swipe-hint.gone { opacity: 0; }
+.swipe-say { position: absolute; left: 0; bottom: 196px; transform: translateX(-50%); margin: 0; background: rgba(15,6,48,.9); border: 2px solid var(--line); border-radius: 14px; padding: 7px 14px; text-align: center; white-space: nowrap; }
+.swipe-say b { display: block; font: 800 17px var(--body); }
+.swipe-say small { display: block; font: 700 13px var(--body); color: var(--dim); }
+.swipe-streak { position: absolute; left: -5px; bottom: 0; width: 10px; height: 150px; border-radius: 6px; background: linear-gradient(0deg, rgba(255,59,92,0), #ff3b5c 15%, #ff8a1f, #ffd21f, #3bd16f, #2fa8ff, #7b5cff); opacity: .55; transform-origin: 50% 100%; }
+.swipe-finger { position: absolute; left: -14px; top: 2px; font-size: 40px; line-height: 1; filter: drop-shadow(0 3px 4px rgba(0,0,0,.6)); }
+body:not(.reduced-motion) .swipe-hint:not(.gone) .swipe-finger { animation: swipe-up 1.7s cubic-bezier(.5,0,.3,1) infinite; }
+body:not(.reduced-motion) .swipe-hint:not(.gone) .swipe-streak { animation: swipe-streak 1.7s cubic-bezier(.5,0,.3,1) infinite; }
+@keyframes swipe-up { 0%, 15% { transform: translateY(0); opacity: 0; } 25% { opacity: 1; } 65% { transform: translateY(-150px); opacity: 1; } 80%, 100% { transform: translateY(-160px); opacity: 0; } }
+@keyframes swipe-streak { 0%, 25% { transform: scaleY(0); opacity: 0; } 65% { transform: scaleY(1); opacity: .6; } 100% { transform: scaleY(1); opacity: 0; } }
 @keyframes bob { 0%,100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, -5px); } }
 
 .stamp { position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%) scale(.6); opacity: 0; text-align: center; pointer-events: none; transition: opacity .2s, transform .25s cubic-bezier(.34,1.56,.64,1); width: 92%; }

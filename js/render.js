@@ -371,9 +371,18 @@ class View {
   drawAim(c, S, t) {
     const b = S.lane.ball, a = S.aim;
     const x0 = b.x, x1 = a.target;
-    const n = 26;
+    // the path the ball will really take (it bends if the swipe did)
+    const key = [x0, x1, a.pow, a.curve || 0].join("|");
+    if (this.aimKey !== key) { this.aimKey = key; this.aimPts = aimPath(x0, x1, a.pow || 0.5, a.curve || 0); }
+    const pts = this.aimPts, n = 26;
+    const at = (z) => {
+      let i = 1;
+      while (i < pts.length - 1 && pts[i][1] < z) i++;
+      const [xa, za] = pts[i - 1], [xb, zb] = pts[i];
+      return xa + (xb - xa) * Math.max(0, Math.min(1, (z - za) / ((zb - za) || 1)));
+    };
     for (let i = 1; i <= n; i++) {
-      const k = i / n, z = k * LANE.HEAD, x = x0 + (x1 - x0) * k;
+      const k = i / n, z = k * LANE.HEAD, x = at(z);
       const p = this.P(x, 0.2, z);
       if (!p) continue;
       const pulse = 0.65 + 0.35 * Math.sin(t * 8 - i * 0.6);

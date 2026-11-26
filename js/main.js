@@ -23,28 +23,29 @@ const Play = {
       if (this.turnBlock > 0) { this.hideTurn(); return false; }
       return this.humanTurn();
     };
+    Input.ideal = (hand) => (this.match ? this.match.lane.aimPoint(hand) : 0);
     Input.onAim = (a) => {
-      const pw = $("power"); pw.classList.add("on"); pw.classList.toggle("hot", a.pow > 0.85);
-      pw.firstElementChild.style.height = Math.round(8 + a.pow * 92) + "%";
-      $("hint").classList.add("gone");
+      this.showPower(a);
     };
-    Input.onCancel = () => $("power").classList.remove("on");
-    Input.onBowl = (target, pow) => {
-      $("power").classList.remove("on");
-      if (!this.humanTurn()) return;
+    Input.onCancel = () => { clearTimeout(this._pw); $("power").classList.remove("on"); };
+    Input.onSlide = (x) => {
+      if (!this.humanTurn()) return x;
+      const b = this.match.lane.ball;
+      b.x = clampStart(x); this.match.cur.x0 = b.x;
+      return b.x;
+    };
+    Input.onTap = () => { this.hintTapT = this.t + 4; };
+    Input.onBowl = (a) => {
+      if (!this.humanTurn()) { $("power").classList.remove("on"); return; }
       const m = this.match;
       m.cur.x0 = m.lane.ball.x;
-      m.throw(m.lane.ball.x, target, pow);
+      m.throw(m.lane.ball.x, a.target, a.pow, a.curve);
+      // the power bar stays up a moment to say how hard it was
+      this.showPower(a);
+      clearTimeout(this._pw); this._pw = setTimeout(() => $("power").classList.remove("on"), 900);
       const s = Storage.getSettings(); s.throws = (s.throws || 0) + 1; if (s.throws <= 6) Storage.saveSettings(s);
+      this.hintAuto = s.throws < 4; this.hintTapT = 0;
     };
-    // the nudge buttons: press and hold to keep sliding
-    for (const [id, dir] of [["btn-left", -1], ["btn-right", 1]]) {
-      const b = $(id);
-      const go = () => this.nudge(dir);
-      b.addEventListener("pointerdown", (e) => { e.preventDefault(); go(); clearInterval(this.nudgeTimer); this.nudgeTimer = setInterval(go, 70); });
-      for (const ev of ["pointerup", "pointerleave", "pointercancel"]) b.addEventListener(ev, () => clearInterval(this.nudgeTimer));
-      b.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
-    }
     $("tray").addEventListener("click", (e) => {
       const b = e.target.closest("button[data-p]");
       if (!b || !this.humanTurn()) return;
@@ -66,11 +67,35 @@ const Play = {
     const m = this.match;
     return !!(m && !this.paused && m.canThrow() && !m.cur.bot && this.turnBlock <= 0);
   },
+  // keyboard arrows move the ball too
   nudge(dir) {
     if (!this.humanTurn() || Input.press) return;
     const b = this.match.lane.ball, before = b.x;
     b.x = clampStart(b.x + dir * 1.25);
     if (b.x !== before) { Sfx.nudge(); this.match.cur.x0 = b.x; }
+  },
+
+  showPower(a) {
+    const pw = $("power");
+    pw.classList.add("on"); pw.classList.toggle("hot", a.pow > 0.85);
+    pw.querySelector("i").style.height = Math.round(8 + a.pow * 92) + "%";
+    pw.querySelector("b").textContent = a.word || "";
+  },
+
+  // The swipe hint: a finger showing the flick, sitting on the ball. Shown
+  // whenever a person (not Robo-Rolly) is about to bowl, for the first few
+  // throws on this device, and for a few seconds after a tap that was not a
+  // swipe. Hidden the moment a finger is on the lane.
+  placeHint() {
+    const h = $("hint"), m = this.match;
+    const show = !!m && (this.hintAuto || this.t < this.hintTapT) && this.humanTurn() && m.lane.ball.state === "ready" && !Input.mode;
+    if (h.classList.contains("gone") === show) h.classList.toggle("gone", !show);
+    if (!show) return;
+    const p = this.view.P(m.lane.ball.x, 0, -10);
+    if (!p) return;
+    const r = $("cv").getBoundingClientRect(), s = $("game-stage").getBoundingClientRect();
+    h.style.left = Math.round(p[0] + r.left - s.left) + "px";
+    h.style.top = Math.round(p[1] + r.top - s.top) + "px";
   },
 
   // cfg: { players: [...], mode: "solo"|"party" }
@@ -86,7 +111,7 @@ const Play = {
     GK.UI.showScreen("game");
     this.view.resize(); this.view.camU = 0; this.view.trail.length = 0;
     $("stamp").className = "stamp";
-    $("hint").classList.toggle("gone", (Storage.getSettings().throws || 0) > 4);
+    this.hintAuto = (Storage.getSettings().throws || 0) < 4; this.hintTapT = 0;
     Input.enabled = true;
     this.hud();
     if (this.match.players.length > 1) this.showTurn(0);
@@ -121,7 +146,8 @@ const Play = {
       else Rumble.off();
     } else if (this.paused) Rumble.off();
     const lane = m.lane, cur = m.cur;
-    const aim = Input.aim ? { target: Input.aim.target, pow: Input.aim.pow } : this.botAim;
+    const aim = Input.aim ? { target: Input.aim.target, pow: Input.aim.pow, curve: Input.aim.curve } : this.botAim;
+    this.placeHint();
     this.view.draw({
       lane, t: this.t, dt: this.paused ? 0 : dt, fx: true, aim,
       power: lane.ball.state !== "ready" ? lane.power : null, armed: cur.armed,
@@ -269,7 +295,6 @@ const Play = {
       $("tray").innerHTML = cur.powers.length
         ? cur.powers.map((id, i) => `<button data-p="${id}" class="pw${cur.armed === id && cur.powers.indexOf(id) === i ? " on" : ""}" ${can ? "" : "disabled"} aria-pressed="${cur.armed === id ? "true" : "false"}" aria-label="${POWERS[id].name}: ${POWERS[id].tip}"><span>${POWERS[id].icon}</span><small>${POWERS[id].short}</small></button>`).join("")
         : `<span class="tray-empty">Knock down every pin to win a power-up</span>`;
-      $("btn-left").disabled = $("btn-right").disabled = !can;
     }
   },
   // One player's ten boxes, as a compact strip.

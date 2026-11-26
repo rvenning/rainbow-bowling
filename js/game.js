@@ -46,13 +46,13 @@ class Match {
     return true;
   }
 
-  throw(x0, target, power) {
+  throw(x0, target, power, curve) {
     if (!this.canThrow()) return false;
     const p = this.cur, w = this.where();
     const used = p.armed;
     if (used) { p.powers.splice(p.powers.indexOf(used), 1); p.armed = null; p.stats.powersUsed++; }
     this.wasSplit = w.ball > 0 && !this.lastFresh ? this.wasSplit : false;
-    this.lane.launch(x0, target, power, { bumpers: !!p.bumpers, power: used });
+    this.lane.launch(x0, target, power, { bumpers: !!p.bumpers, power: used, curve });
     this.phase = "rolling"; this.phaseT = 0;
     this.events.push({ type: "throw", seat: this.seat, power: used, frame: w.frame, ball: w.ball });
     return true;

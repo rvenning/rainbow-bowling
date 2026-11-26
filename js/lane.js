@@ -30,6 +30,12 @@ const LANE = {
 const PIN_DRAG = { a: 500, b: 1.5, kick: 0.6, e: 0.5 };
 const PIN_SWING = { len: 15, r: 1.9, speed: 220 };
 
+// A curved swipe makes the ball HOOK: a sideways push over the back of the
+// lane (like real spin biting late), in in/s² at curve = ±1. The ball is
+// launched so that, hook and all, it still crosses the head pin where it
+// was aimed: the curve changes the angle it comes in at, never the target.
+const HOOK = { accel: 26, from: 300 };
+
 // The rack, numbered the standard way: 1 at the front, 7-8-9-10 at the back.
 const ROW = 12 * Math.sqrt(3) / 2;
 const PIN_SPOTS = [
@@ -65,7 +71,7 @@ class LaneSim {
     this.t = 0; this.events = []; this.done = false; this.bumpers = false; this.power = null;
     this.standingAtLaunch = 10; this.passT = -1; this.burstDone = false; this.lucky = null;
   }
-  newBall(x) { return { x, z: -10, vx: 0, vz: 0, r: LANE.BALL_R, m: LANE.BALL_M, state: "ready", roll: 0, gutterSide: 0 }; }
+  newBall(x) { return { x, z: -10, vx: 0, vz: 0, r: LANE.BALL_R, m: LANE.BALL_M, state: "ready", roll: 0, gutterSide: 0, hook: 0 }; }
 
   // A full fresh rack.
   rack() {
@@ -113,6 +119,9 @@ class LaneSim {
     const dx = target - b.x, dz = LANE.HEAD;
     const len = Math.hypot(dx, dz);
     b.vx = speed * dx / len; b.vz = speed * dz / len;
+    b.hook = 0;
+    const curve = Math.max(-1, Math.min(1, +o.curve || 0));
+    if (curve) { const sol = hookLine(b.x, target, b.vz, curve); b.vx = sol.vx; b.hook = sol.hook; }
     b.state = "rolling";
     this.standingAtLaunch = this.standing().length;
     if (this.power === "lucky") this.lucky = this.aimPoint(b.x >= 0 ? 1 : -1);
@@ -140,6 +149,7 @@ class LaneSim {
         const want = (this.lucky - b.x) / Math.max(40, LANE.HEAD - b.z) * b.vz;
         b.vx += (want - b.vx) * Math.min(1, D * 2.6);
       }
+      if (b.hook && b.state === "rolling" && b.z > HOOK.from && b.z < LANE.DECK) b.vx += b.hook * D;
       const decel = b.z > LANE.DECK ? 60 : 9;
       const sp = Math.hypot(b.vx, b.vz);
       if (sp > 0) { const k = Math.max(0, sp - decel * D) / sp; b.vx *= k; b.vz *= k; }
@@ -321,6 +331,54 @@ class LaneSim {
 
   // Plain-data snapshot, for the renderer's sweep animation and the tests.
   snapshot() { return this.pins.map((p) => ({ n: p.n, x: p.x, z: p.z, down: p.down, gone: p.gone })); }
+}
+
+// The ball on its own, no pins: the same motion step() gives it before the
+// deck. Returns the x it crosses the head pin at, the widest |x| on the way,
+// and (with `pts`) sampled [x, z] points for drawing the aim line.
+function rollPath(x0, vx, vz, hook, pts) {
+  const D = LANE.DT;
+  let x = x0, z = 0, widest = Math.abs(x0);
+  for (let n = 0; z < LANE.HEAD && n < 5000; n++) {
+    if (hook && z > HOOK.from && z < LANE.DECK) vx += hook * D;
+    const sp = Math.hypot(vx, vz), k = Math.max(0, sp - 9 * D) / sp;
+    vx *= k; vz *= k;
+    x += vx * D; z += vz * D;
+    widest = Math.max(widest, Math.abs(x));
+    if (pts && n % 24 === 0) pts.push([x, z]);
+  }
+  return { x, widest };
+}
+
+// Solve the launch for a hooked ball: the sideways speed that makes it cross
+// the head pin at `target`. If that line would leave the lane before the hook
+// brings it back, soften the hook until it stays on: a curve should never be
+// what puts a ball in the gutter.
+function hookLine(x0, target, vz, curve) {
+  let hook = curve * HOOK.accel, vx = 0;
+  const lim = Math.max(LANE.HALF - LANE.BALL_R, Math.abs(target) + 0.5, Math.abs(x0) + 0.5);
+  for (let tries = 0; tries < 10; tries++) {
+    vx = (target - x0) * vz / LANE.HEAD;
+    for (let i = 0; i < 4; i++) {
+      const a = rollPath(x0, vx, vz, hook).x, b = rollPath(x0, vx + 1, vz, hook).x;
+      vx += (target - a) / (b - a || 1);
+    }
+    if (rollPath(x0, vx, vz, hook).widest <= lim) break;
+    hook *= 0.7;
+  }
+  return { vx, hook };
+}
+
+// The aim line for a throw that has not happened yet: [x, z] points.
+function aimPath(x0, target, power, curve) {
+  const speed = LANE.MIN_SPEED + (LANE.MAX_SPEED - LANE.MIN_SPEED) * Math.max(0, Math.min(1, power));
+  const len = Math.hypot(target - x0, LANE.HEAD), vz = speed * LANE.HEAD / len;
+  let vx = speed * (target - x0) / len, hook = 0;
+  if (curve) ({ vx, hook } = hookLine(x0, target, vz, Math.max(-1, Math.min(1, curve))));
+  const pts = [[x0, 0]];
+  rollPath(x0, vx, vz, hook, pts);
+  pts.push([target, LANE.HEAD]);
+  return pts;
 }
 
 function clampStart(x) { const lim = LANE.HALF - LANE.BALL_R - 0.5; return Math.max(-lim, Math.min(lim, x)); }
