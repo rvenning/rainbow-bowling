@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="gk-version" content="1" data-date="2026-11-26" data-kit="1.10.1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Rainbow Bowling — Ten-pin with a rainbow ball</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1b0b45">
+<meta name="description" content="Ten-pin bowling with a rainbow ball, sparkly pins, power-ups and fireworks. Play on your own or pass the phone for up to four players.">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Rainbow Bowling">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="lib/gk-base.css">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="icons/icon-192.png">
+</head>
+<body>
+
+<svg class="sprite" aria-hidden="true" focusable="false"><defs>
+  <symbol id="ico-gear" viewBox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7zm8.6 4.7l1.8 1.4-2 3.5-2.2-.8a8 8 0 01-1.9 1.1L16 20.7h-4l-.3-2.3a8 8 0 01-1.9-1.1l-2.2.8-2-3.5 1.8-1.4a8 8 0 010-2.2L5.6 9.6l2-3.5 2.2.8a8 8 0 011.9-1.1L12 3.3h4l.3 2.3a8 8 0 011.9 1.1l2.2-.8 2 3.5-1.8 1.4a8 8 0 010 2.2z" fill="currentColor" transform="translate(-2 0)"/></symbol>
+  <symbol id="ico-trophy" viewBox="0 0 24 24"><path d="M7 3h10v4a5 5 0 01-10 0zM5 4H3v2a4 4 0 004 4M19 4h2v2a4 4 0 01-4 4M12 12v4M8 20h8M9.5 16h5l.8 4h-6.6z" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round"/></symbol>
+  <symbol id="ico-pause" viewBox="0 0 24 24"><rect x="6" y="4.5" width="4" height="15" rx="1.4" fill="currentColor"/><rect x="14" y="4.5" width="4" height="15" rx="1.4" fill="currentColor"/></symbol>
+  <symbol id="ico-back" viewBox="0 0 24 24"><path d="M15 4l-8 8 8 8" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></symbol>
+  <symbol id="ico-left" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></symbol>
+  <symbol id="ico-right" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></symbol>
+  <symbol id="ico-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2.5" fill="currentColor"/><path d="M8 10V7.5a4 4 0 018 0V10" stroke="currentColor" stroke-width="2.2" fill="none"/></symbol>
+</defs></svg>
+
+<!-- Splash: a real game plays itself behind the title -->
+<div class="screen active" id="screen-splash">
+  <canvas id="hero" class="hero-cv" aria-hidden="true"></canvas>
+  <div class="splash-inner">
+    <h1 class="logo"><span class="l1">Rainbow</span><span class="l2">Bowling</span></h1>
+    <p class="tagline">Strikes, spares and sparkles</p>
+    <div class="splash-btns">
+      <button class="btn big primary" id="btn-continue-as" hidden></button>
+      <button class="btn big primary" id="btn-start" onclick="App.play()">Play</button>
+      <div class="row-btns2">
+        <button class="btn soft" onclick="App.openSettings()"><svg class="i"><use href="#ico-gear"/></svg>Settings</button>
+        <button class="btn soft" onclick="App.howTo()">How to play</button>
+      </div>
+      <button class="btn soft" id="btn-install" style="display:none">Add to Home Screen</button>
+    </div>
+    <div class="splash-foot">
+      <span id="sync-badge">connecting…</span>
+      <button class="btn-sound iconbtn" aria-label="Sound">🔊</button>
+    </div>
+  </div>
+</div>
+
+<!-- Profiles (roster + PIN modals rendered by GK.Profiles) -->
+<div class="screen" id="screen-profiles">
+  <header class="topbar">
+    <button class="iconbtn" onclick="App.showScreen('splash')" aria-label="Back"><svg class="i"><use href="#ico-back"/></svg></button>
+    <h2 class="grow">Who's bowling?</h2>
+    <button class="btn-sound iconbtn" aria-label="Sound">🔊</button>
+  </header>
+  <div class="content"><div class="profile-list" id="profile-list"></div></div>
+</div>
+
+<!-- Main menu -->
+<div class="screen" id="screen-menu">
+  <header class="topbar sticky">
+    <button class="iconbtn" onclick="App.play()" aria-label="Switch player"><span id="menu-avatar">👤</span></button>
+    <div class="grow menu-title"><span class="kicker">Rainbow Lanes</span><b id="menu-name"></b></div>
+    <button class="iconbtn" onclick="App.showLeaderboard()" aria-label="Family leaderboard"><svg class="i"><use href="#ico-trophy"/></svg></button>
+    <button class="iconbtn" onclick="App.openSettings()" aria-label="Settings"><svg class="i"><use href="#ico-gear"/></svg></button>
+  </header>
+  <div class="content">
+    <button class="mode-card solo" id="btn-solo" onclick="App.startSolo()" aria-label="Single player: bowl a ten-frame game on your own">
+      <span class="mc-ic" aria-hidden="true">🎳</span>
+      <span class="mc-body"><b>Single Player</b><span>Bowl ten frames and beat your best</span></span>
+    </button>
+    <button class="mode-card pass" onclick="App.showSetup()" aria-label="Pass and play: two to four players take turns on this device">
+      <span class="mc-ic" aria-hidden="true">👫</span>
+      <span class="mc-body"><b>Pass and Play</b><span>2 to 4 players take turns on this device</span></span>
+    </button>
+    <div class="me-panel panel">
+      <label class="toggle big-toggle"><input type="checkbox" id="me-bumpers"><span><b>Bumpers</b><small>Walls pop up along the gutters so the ball always reaches the pins</small></span></label>
+      <div class="me-stats" id="me-stats"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Pass and play setup -->
+<div class="screen" id="screen-setup">
+  <header class="topbar sticky">
+    <button class="iconbtn" onclick="App.showMenu()" aria-label="Back"><svg class="i"><use href="#ico-back"/></svg></button>
+    <h2 class="grow">Pass and Play</h2>
+    <button class="btn-sound iconbtn" aria-label="Sound">🔊</button>
+  </header>
+  <div class="content">
+    <p class="nudge">Everyone bowls one frame, then passes the phone. Tap <b>Bumpers</b> to give a player gutter walls.</p>
+    <div class="party-list" id="party-list"></div>
+    <button class="btn soft wide" id="btn-add-player" onclick="App.openAddPlayer()">+ Add a player</button>
+    <button class="btn big primary wide" id="btn-party-go" onclick="App.startParty()">Let's bowl!</button>
+  </div>
+</div>
+
+<!-- The lane -->
+<div class="screen" id="screen-game">
+  <div class="game-stage" id="game-stage">
+    <canvas id="cv" aria-label="The bowling lane"></canvas>
+    <div class="hud" id="hud">
+      <button class="sheet-strip card" id="sheet" onclick="App.showCard()" aria-label="Score sheet: tap to see everyone's scores"></button>
+      <div class="hud-row">
+        <button class="hud-btn" onclick="Play.pause()" aria-label="Pause"><svg class="i"><use href="#ico-pause"/></svg></button>
+        <span class="pill player-pill" id="hud-player"><i class="seat-dot"></i><span></span></span>
+        <span class="pill frame-pill" id="hud-frame"></span>
+        <span class="grow"></span>
+        <span class="pin-map" id="pin-map" aria-label="Pins standing"></span>
+      </div>
+    </div>
+    <div class="power" id="power" aria-hidden="true"><i></i></div>
+    <div class="stamp" id="stamp" aria-live="polite"></div>
+    <div class="turn-card" id="turn-card" aria-live="polite"></div>
+    <div class="hint" id="hint">Pull down anywhere, then let go to bowl!</div>
+    <div class="bottom-bar">
+      <button class="nudge-btn" id="btn-left" aria-label="Move the ball left"><svg class="i"><use href="#ico-left"/></svg></button>
+      <div class="tray" id="tray" aria-label="Power-ups"></div>
+      <button class="nudge-btn" id="btn-right" aria-label="Move the ball right"><svg class="i"><use href="#ico-right"/></svg></button>
+    </div>
+  </div>
+</div>
+
+<!-- End of a game -->
+<div class="screen" id="screen-results">
+  <div class="res-inner panel">
+    <div class="kicker" id="res-kicker">Game over</div>
+    <h2 class="res-title" id="res-title"></h2>
+    <div class="res-big" id="res-big"></div>
+    <div class="card-wrap" id="res-card"></div>
+    <p class="res-note" id="res-note"></p>
+    <button class="btn big primary wide" id="res-again">Play again</button>
+    <button class="btn soft wide" id="res-menu">Main menu</button>
+  </div>
+</div>
+
+<!-- Leaderboard -->
+<div class="screen" id="screen-leaderboard">
+  <header class="topbar sticky">
+    <button class="iconbtn" onclick="App.showMenu()" aria-label="Back"><svg class="i"><use href="#ico-back"/></svg></button>
+    <h2 class="grow">The Family</h2>
+    <button class="btn-sound iconbtn" aria-label="Sound">🔊</button>
+  </header>
+  <div class="content">
+    <div class="lb-tabs" id="lb-tabs" role="tablist"></div>
+    <p class="nudge" id="lb-note"></p>
+    <div class="lb-rows" id="lb-rows"></div>
+  </div>
+</div>
+
+<canvas id="fw" class="fw-cv" aria-hidden="true"></canvas>
+
+<!-- Full score sheet -->
+<div class="modal" id="modal-card">
+  <div class="modal-box card-box">
+    <h2 id="mc-title">Scores</h2>
+    <div class="card-wrap" id="mc-card"></div>
+    <button class="btn big primary wide" onclick="App.closeCard()">Keep bowling</button>
+  </div>
+</div>
+
+<!-- Pause -->
+<div class="modal" id="modal-pause">
+  <div class="modal-box">
+    <h2>Paused</h2>
+    <p id="pause-where"></p>
+    <button class="btn big primary wide" onclick="Play.resume()">Keep bowling</button>
+    <div class="row-btns2">
+      <button class="btn soft" onclick="App.openSettings(true)"><svg class="i"><use href="#ico-gear"/></svg>Settings</button>
+      <button class="btn soft" onclick="App.restartGame()">Restart</button>
+    </div>
+    <button class="btn soft wide" onclick="App.exitGame()">Main menu</button>
+  </div>
+</div>
+
+<!-- Settings -->
+<div class="modal" id="modal-settings">
+  <div class="modal-box">
+    <h2>Settings</h2>
+    <div class="toggles">
+      <label class="toggle"><input type="checkbox" id="set-sound"><span>Sound effects</span></label>
+      <label class="toggle"><input type="checkbox" id="set-music"><span>Music</span></label>
+      <label class="toggle"><input type="checkbox" id="set-fast"><span>Speedy sweeper<small>Shorter pauses between balls</small></span></label>
+    </div>
+    <button class="btn primary wide" onclick="App.closeSettings()">Done</button>
+  </div>
+</div>
+
+<!-- Add a player -->
+<div class="modal" id="modal-add">
+  <div class="modal-box">
+    <h2>Add a player</h2>
+    <div class="add-list" id="add-list"></div>
+    <form class="guest-form" id="guest-form">
+      <label class="kicker" for="guest-name">Or type a name</label>
+      <div class="guest-row"><input id="guest-name" maxlength="14" autocomplete="off" placeholder="Guest name"><button class="btn primary" type="submit">Add</button></div>
+    </form>
+    <button class="btn soft wide" onclick="GK.UI.closeModal('modal-add')">Done</button>
+  </div>
+</div>
+
+<!-- How to play -->
+<div class="modal" id="modal-howto">
+  <div class="modal-box howto">
+    <h2>How to play</h2>
+    <ul class="howto-list">
+      <li><span><b>Bowl:</b> press anywhere on the lane and pull down, like a slingshot. Pull further for more power. Slide sideways to steer the rainbow dots. Let go to bowl!</span></li>
+      <li><span><b>Move the ball</b> left or right with the big arrow buttons before you bowl.</span></li>
+      <li><span><b>Strike:</b> all ten pins with your first ball. Fireworks! You score 10 plus your next two balls.</span></li>
+      <li><span><b>Spare:</b> all the pins with two balls. You score 10 plus your next ball.</span></li>
+      <li><span><b>Power-ups:</b> knock down every pin to win one. Tap it before you bowl to use it: 🚀 Rainbow Boost, 🎈 Giant Ball, 🍀 Lucky Bounce, ✨ Sparkle Burst.</span></li>
+      <li><span><b>Bumpers</b> stop the ball falling in the gutter. Turn them on in the menu.</span></li>
+      <li><span><b>Ten frames</b> make a game. The tenth frame gives bonus balls for a strike or spare. 300 is a perfect game!</span></li>
+    </ul>
+    <button class="btn primary wide" onclick="GK.UI.closeModal('modal-howto')">Got it</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- gamekit (vendored from rvenning/gamekit into lib/) -->
+<script src="lib/gk-util.js"></script>
+<script src="lib/gk-audio.js"></script>
+<script src="lib/gk-ui.js"></script>
+<script src="lib/gk-storage.js"></script>
+<script src="lib/gk-profiles.js"></script>
+<script src="lib/gk-pwa.js"></script>
+<script src="lib/gk-fx.js"></script>
+<script src="lib/gk-debug.js"></script>
+<script src="js/firebase-config.js"></script>
+<!-- engine: no DOM, no canvas, no Math.random -->
+<script src="js/scoring.js"></script>
+<script src="js/lane.js"></script>
+<script src="js/game.js"></script>
+<script src="js/bot.js"></script>
+<!-- app -->
+<script src="js/storage.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/render.js"></script>
+<script src="js/fireworks.js"></script>
+<script src="js/input.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+{
+  "name": "rainbow-bowling",
+  "private": true,
+  "description": "Rainbow Bowling - ten-pin bowling with a rainbow ball, on gamekit",
+  "scripts": {
+    "test": "node --test tests/*.test.js"
+  }
+}
